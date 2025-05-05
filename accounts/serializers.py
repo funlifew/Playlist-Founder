@@ -1,5 +1,6 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from django.utils.encoding import force_str, force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
@@ -71,6 +72,30 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.save()
         
         return user
+
+class LoginSerializer(serializers.Serializer):
+    """Login Serializer"""
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, style={'input': 'password'})
+    
+    def save(self, validated_data):
+        """Save method for authenticate user"""
+        username, password = [validated_data['username'], validated_data['password']]
+        try:
+            user = User.objects.get(username=username)
+            if not user.is_verified:
+                raise serializers.ValidationError({"user": "Your account is not verified please verify it at first"}, status.HTTP_401_UNAUTHORIZED)
+            
+            if not user.check_password(password):
+                raise serializers.ValidationError({"user": "Username or Password is incorrect"}, status.HTTP_401_UNAUTHORIZED)
+            
+            validated_data['user'] = user
+            return user
+            
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"user": "Username or Password is incorrect"}, status.HTTP_401_UNAUTHORIZED)
+        
+        
 
 class ActivateAccountSerializer(serializers.Serializer):
     """Serialize for activating user account via uid and token"""

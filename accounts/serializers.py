@@ -7,6 +7,7 @@ from django.contrib.auth.tokens import default_token_generator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
 from utils.password_service import PasswordService
+from .tokens import account_activation_token
 
 
 User = get_user_model()

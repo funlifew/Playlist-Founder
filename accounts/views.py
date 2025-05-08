@@ -10,10 +10,12 @@ from django.core.mail import EmailMessage
 from django.utils import timezone
 from django.conf import settings
 from utils.email_service import EmailService
+from django.contrib.auth import authenticate
 
 from .serializers import (
     UserSerializer,
     RegisterSerializer,
+    LoginSerializer,
     PasswordChangeSerializer,
     ActivateAccountSerializer,
     PasswordResetRequestSerializer,
@@ -46,6 +48,15 @@ class RegisterView(generics.CreateAPIView):
         return Response({
             "message": "User registered successfully. Please check your email to activate your account."
         }, status=status.HTTP_201_CREATED)
+        
+class LoginView(generics.GenericAPIView):
+    serializer_class = LoginSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
 
 class ActivateAccountView(generics.GenericAPIView):
     """API endpoint for account activation"""
@@ -97,3 +108,12 @@ class PasswordResetRequestView(generics.GenericAPIView):
         return Response({
             "message": "If your email is registered, you will receive a password reset link."
         }, status=status.HTTP_200_OK)
+
+class PasswordResetView(generics.GenericAPIView):
+    serializer_class = PasswordResetConfirmSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({"message": "You're password changed successfully."}, status=status.HTTP_200_OK)

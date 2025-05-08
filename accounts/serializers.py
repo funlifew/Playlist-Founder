@@ -8,6 +8,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
 from utils.password_service import PasswordService
 from .tokens import account_activation_token
+from utils.email_service import EmailService
 
 
 User = get_user_model()
@@ -85,13 +86,19 @@ class LoginSerializer(serializers.Serializer):
         try:
             user = User.objects.get(username=username)
             if not user.is_verified:
+                # generate activation link
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                token = account_activation_token.make_token(user)
+                
+                # Send Activation Link
+                EmailService.send_activation_link(user, uid, token)
                 raise serializers.ValidationError({"user": "Your account is not verified please verify it at first"}, status.HTTP_401_UNAUTHORIZED)
             
             if not user.check_password(password):
                 raise serializers.ValidationError({"user": "Username or Password is incorrect"}, status.HTTP_401_UNAUTHORIZED)
             
             validated_data['user'] = user
-            return user
+            return validated_data
             
         except User.DoesNotExist:
             raise serializers.ValidationError({"user": "Username or Password is incorrect"}, status.HTTP_401_UNAUTHORIZED)
